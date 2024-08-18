@@ -3,8 +3,3 @@ os: linux
 files:
   - source: /build/
     destination: /home/ec2-user/app
-hooks:
-  BeforeInstall:
-    - location: Scripts/before_install.sh
-      timeout: 100
-      runas: root
