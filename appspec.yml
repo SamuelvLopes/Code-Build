@@ -1,25 +1,51 @@
-version: 0.0
-os: linux
-files:
-  - source: /build/
-    destination: /home/ec2-user/app
-hooks:
-  BeforeInstall:
-    - location: Scripts/before_install.sh
-      timeout: 100
-      runas: root
-  AfterInstall:
-    - location: Scripts/after_install.sh
-      timeout: 180
-      runas: root
-  Install:
-    - location: Scripts/install.sh
-      timeout: 180
-      runas: root
-  ApplicationStart:
-    - location: Scripts/RunFunctionalTests.sh
-      timeout: 3600
-  ValidateService:
-    - location: Scripts/app_start.sh
-      timeout: 300
-      runas: root
+version: '1.0'
+
+stages:
+  - security-checks
+  - build
+  - deploy
+
+security_checks:
+  stage: security-checks
+  jobs:
+    - name: static-code-analysis
+      script:
+        - echo "Running Static Code Analysis"
+        - tool-for-static-analysis run --config config-file.yml --path ./src
+
+    - name: dependency-check
+      script:
+        - echo "Running Dependency Check"
+        - tool-for-dependency-check --scan ./src --output report-deps.txt
+      artifacts:
+        paths:
+          - report-deps.txt
+
+    - name: security-testing
+      script:
+        - echo "Running Security Tests"
+        - tool-for-security-tests run --target http://localhost:8080
+
+    - name: report-generation
+      script:
+        - echo "Generating Security Report"
+        - tool-for-report-generation --input ./src --output security-report.html
+      artifacts:
+        paths:
+          - security-report.html
+
+build:
+  stage: build
+  jobs:
+    - name: build-application
+      script:
+        - echo "Building the application"
+        - ./build-script.sh
+
+deploy:
+  stage: deploy
+  jobs:
+    - name: deploy-application
+      script:
+        - echo "Deploying the application"
+        - ./deploy-script.sh
