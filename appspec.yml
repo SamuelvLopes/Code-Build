@@ -1,51 +1,27 @@
-version: '1.0'
+version: 0.0
+os: linux
 
-stages:
-  - security-checks
-  - build
-  - deploy
+files:
+  - source: /
+    destination: /var/www/myapp
 
-security_checks:
-  stage: security-checks
-  jobs:
-    - name: static-code-analysis
-      script:
-        - echo "Running Static Code Analysis"
-        - tool-for-static-analysis run --config config-file.yml --path ./src
+hooks:
+  BeforeInstall:
+    - location: scripts/install_dependencies.sh
+      timeout: 300
+      runas: root
 
-    - name: dependency-check
-      script:
-        - echo "Running Dependency Check"
-        - tool-for-dependency-check --scan ./src --output report-deps.txt
-      artifacts:
-        paths:
-          - report-deps.txt
+  AfterInstall:
+    - location: scripts/start_server.sh
+      timeout: 300
+      runas: root
 
-    - name: security-testing
-      script:
-        - echo "Running Security Tests"
-        - tool-for-security-tests run --target http://localhost:8080
+  ApplicationStop:
+    - location: scripts/stop_server.sh
+      timeout: 300
+      runas: root
 
-    - name: report-generation
-      script:
-        - echo "Generating Security Report"
-        - tool-for-report-generation --input ./src --output security-report.html
-      artifacts:
-        paths:
-          - security-report.html
-
-build:
-  stage: build
-  jobs:
-    - name: build-application
-      script:
-        - echo "Building the application"
-        - ./build-script.sh
-
-deploy:
-  stage: deploy
-  jobs:
-    - name: deploy-application
-      script:
-        - echo "Deploying the application"
-        - ./deploy-script.sh
+  ValidateService:
+    - location: scripts/validate_service.sh
+      timeout: 300
+      runas: root
